@@ -1,0 +1,5 @@
+include LICENSE
+include README.rst
+global-exclude *.pyc
+graft space_track_api
+graft examples
