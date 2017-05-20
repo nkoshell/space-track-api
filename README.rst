@@ -10,6 +10,14 @@ Requirements
 - requests >= 2.14.2
 
 
+Installing
+__________
+
+::
+
+    pip install space-track-api
+
+
 Getting started
 ---------------
 
