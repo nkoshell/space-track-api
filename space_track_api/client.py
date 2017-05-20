@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import logging
+from contextlib import closing
 
 from requests import Session
 from .query import SpaceTrackQueryBuilder
@@ -64,13 +65,13 @@ class SpaceTrackApi(object):
         qb = SpaceTrackQueryBuilder(**kwargs)
         url = '{url}/{query}'.format(url=self.url, query=qb)
         self.logger.info('Send request to %s', url)
-        resp = self.session.get(url)
-        try:
-            m = getattr(resp, self.get_response_method(qb.format))
-            return m() if callable(m) else m
-        except Exception as e:
-            self.logger.exception(e)
-            return resp.text
+        with closing(self.session.get(url)) as resp:
+            try:
+                m = getattr(resp, self.get_response_method(qb.format))
+                return m() if callable(m) else m
+            except Exception as e:
+                self.logger.exception(e)
+                return resp.text
 
     @staticmethod
     def get_response_method(fmt):
@@ -90,15 +91,15 @@ class SpaceTrackApi(object):
         return self.query(**kwargs)
 
     def login(self):
-        resp = self.session.post('{}/{}'.format(self.url, self.login_url), data=self.credentials)
-        if resp.reason == 'OK':
-            self.logger.info('"Successfully logged in"')
-            return self.session
+        with closing(self.session.post('{}/{}'.format(self.url, self.login_url), data=self.credentials)) as resp:
+            if resp.reason == 'OK':
+                self.logger.info('"Successfully logged in"')
+                return self.session
 
     def logout(self):
-        resp = self.session.get('{}/{}'.format(self.url, self.logout_url))
-        if resp.reason == 'OK':
-            self.logger.info(resp.text)
+        with closing(self.session.get('{}/{}'.format(self.url, self.logout_url))) as resp:
+            if resp.reason == 'OK':
+                self.logger.info(resp.text)
 
     def close(self):
         self.session.close()

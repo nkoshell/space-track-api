@@ -3,9 +3,9 @@ from __future__ import unicode_literals
 
 import codecs
 import re
-from distutils.core import setup
 
 import os
+from setuptools import setup
 
 PROJECT_DIR = os.path.abspath(os.path.dirname(__file__))
 VERSION_REGEXP = re.compile(r"^__version__ = [\'\"](.+?)[\'\"]$", re.MULTILINE)
