@@ -34,7 +34,7 @@ To retrieve something from Space-Track:
 
 
   def main():
-      with SpaceTrackApi(login='koshelev.n.a@yandex.ru', password='K0SHeLeV-941021') as api:
+      with SpaceTrackApi(login='<YOUR_LOGIN>', password='<YOUR_PASSWORD>') as api:
           tle_list = api.tle(EPOCH='>now-3',
                              NORAD_CAT_ID=(25544, 25541,),
                              order_by=('EPOCH desc', 'NORAD_CAT_ID',),
