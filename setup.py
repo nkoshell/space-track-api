@@ -37,5 +37,5 @@ setup(
     license='MIT',
     author='nkoshell',
     author_email='nikita.koshelev@gmail.com',
-    install_requires=['requests>=2.14.2'],
+    install_requires=['requests>=2.14.2', 'ratelimiter>=1.1.1'],
 )

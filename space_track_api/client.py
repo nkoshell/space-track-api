@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import unicode_literals, division
 
 import logging
 from contextlib import closing
+from functools import partial
 
+from ratelimiter import RateLimiter
 from requests import Session
-from .query import SpaceTrackQueryBuilder
+
+from .query import SpaceTrackQueryBuilder, SUPPORTABLE_ENTITIES
 
 
 class SpaceTrackApi(object):
@@ -18,49 +21,7 @@ class SpaceTrackApi(object):
         self.login_url = kwargs.pop('login_url', 'ajaxauth/login')
         self.logout_url = kwargs.pop('logout_url', 'ajaxauth/logout')
 
-    def tle_latest(self, **kwargs):
-        kwargs['entity'] = 'tle_latest'
-        return self.query(**kwargs)
-
-    def tle_publish(self, **kwargs):
-        kwargs['entity'] = 'tle_publish'
-        return self.query(**kwargs)
-
-    def omm(self, **kwargs):
-        kwargs['entity'] = 'omm'
-        return self.query(**kwargs)
-
-    def boxscore(self, **kwargs):
-        kwargs['entity'] = 'boxscore'
-        return self.query(**kwargs)
-
-    def satcat(self, **kwargs):
-        kwargs['entity'] = 'satcat'
-        return self.query(**kwargs)
-
-    def launch_site(self, **kwargs):
-        kwargs['entity'] = 'launch_site'
-        return self.query(**kwargs)
-
-    def satcat_change(self, **kwargs):
-        kwargs['entity'] = 'satcat_change'
-        return self.query(**kwargs)
-
-    def satcat_debut(self, **kwargs):
-        kwargs['entity'] = 'satcat_debut'
-        return self.query(**kwargs)
-
-    def decay(self, **kwargs):
-        kwargs['entity'] = 'decay'
-        return self.query(**kwargs)
-
-    def tip(self, **kwargs):
-        kwargs['entity'] = 'tip'
-        return self.query(**kwargs)
-
-    def tle(self, **kwargs):
-        return self.query(**kwargs)
-
+    @RateLimiter(max_calls=20, period=60)
     def query(self, **kwargs):
         qb = SpaceTrackQueryBuilder(**kwargs)
         url = '{url}/{query}'.format(url=self.url, query=qb)
@@ -72,6 +33,20 @@ class SpaceTrackApi(object):
             except Exception as e:
                 self.logger.exception(e)
                 return resp.text
+
+    def login(self):
+        with closing(self.session.post('{}/{}'.format(self.url, self.login_url), data=self.credentials)) as resp:
+            if resp.reason == 'OK':
+                self.logger.info('"Successfully logged in"')
+                return self.session
+
+    def logout(self):
+        with closing(self.session.get('{}/{}'.format(self.url, self.logout_url))) as resp:
+            if resp.reason == 'OK':
+                self.logger.info(resp.text)
+
+    def close(self):
+        self.session.close()
 
     @staticmethod
     def get_response_method(fmt):
@@ -90,19 +65,10 @@ class SpaceTrackApi(object):
     def __call__(self, **kwargs):
         return self.query(**kwargs)
 
-    def login(self):
-        with closing(self.session.post('{}/{}'.format(self.url, self.login_url), data=self.credentials)) as resp:
-            if resp.reason == 'OK':
-                self.logger.info('"Successfully logged in"')
-                return self.session
-
-    def logout(self):
-        with closing(self.session.get('{}/{}'.format(self.url, self.logout_url))) as resp:
-            if resp.reason == 'OK':
-                self.logger.info(resp.text)
-
-    def close(self):
-        self.session.close()
+    def __getattr__(self, item):
+        if item not in SUPPORTABLE_ENTITIES:
+            raise AttributeError('`{!r}` object has no attribute "{}"'.format(self, item))
+        return partial(self.query, entity=item)
 
     def __enter__(self):
         self.login()

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from pprint import pprint
 
-from space_track_api import SpaceTrackApi
+from space_track_api import SpaceTrackApi, log
 
 
 def main():
@@ -16,4 +16,6 @@ def main():
 
 
 if __name__ == '__main__':
+    import logging
+    logging.basicConfig(level=logging.DEBUG, format=log.DEFAULT_LOG_FORMAT)
     main()
